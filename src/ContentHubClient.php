@@ -243,23 +243,7 @@ class ContentHubClient extends Client
         $return = $this->getResponseJson($this->get("/entities/{$uuid}"));
         if (!empty($return['data']['data'])) {
           $data = $return['data']['data'];
-          $object = new CDFObject($data['type'], $data['uuid'], $data['created'], $data['modified'], $data['origin'], $data['metadata']);
-          foreach ($data['attributes'] as $attribute_name => $values) {
-            if (!$attribute = $object->getAttribute($attribute_name)) {
-              $class = !empty($object->getMetadata()['attributes'][$attribute_name]) ? $object->getMetadata()['attributes'][$attribute_name]['class'] : FALSE;
-              if ($class && class_exists($class)) {
-                $object->addAttribute($attribute_name, $values['type'], NULL, 'und', $class);
-              }
-              else {
-                $object->addAttribute($attribute_name, $values['type'], NULL);
-              }
-              $attribute = $object->getAttribute($attribute_name);
-            }
-            $value_property = (new \ReflectionClass($attribute))->getProperty('value');
-            $value_property->setAccessible(TRUE);
-            $value_property->setValue($attribute, $values['value']);
-          }
-          return $object;
+          return CDFObject::fromArray($data);
         }
         return $return;
     }
@@ -296,23 +280,7 @@ class ContentHubClient extends Client
       if (is_array($results) && isset($results['hits']['total']) && $results['hits']['total'] > 0) {
         foreach ($results['hits']['hits'] as $key => $item) {
           $entity = $item['_source']['data'];
-          $object = new CDFObject($entity['type'], $entity['uuid'], $entity['created'], $entity['modified'], $entity['origin'], $entity['metadata']);
-          foreach ($entity['attributes'] as $attribute_name => $values) {
-            if (!$attribute = $object->getAttribute($attribute_name)) {
-              $class = !empty($object->getMetadata()['attributes'][$attribute_name]) ? $object->getMetadata()['attributes'][$attribute_name]['class'] : FALSE;
-              if ($class && class_exists($class)) {
-                $object->addAttribute($attribute_name, $values['type'], NULL, 'und', $class);
-              }
-              else {
-                $object->addAttribute($attribute_name, $values['type'], NULL);
-              }
-              $attribute = $object->getAttribute($attribute_name);
-            }
-            $value_property = (new \ReflectionClass($attribute))->getProperty('value');
-            $value_property->setAccessible(TRUE);
-            $value_property->setValue($attribute, $values['value']);
-          }
-          $objects[] = $object;
+          $objects[] = CDFObject::fromArray($entity);
         }
       }
     }

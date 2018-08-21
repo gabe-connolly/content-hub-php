@@ -174,4 +174,35 @@ class CDFObject {
     return $output;
   }
 
+  /**
+   * Builds a CDFObject from its array representation.
+   *
+   * @param array $data
+   *   The CDF array.
+   *
+   * @return \Acquia\ContentHubClient\CDFObject
+   *   A full CDF Object.
+   *
+   * @throws \Exception
+   */
+  public static function fromArray(array $data) {
+    $object = new CDFObject($data['type'], $data['uuid'], $data['created'], $data['modified'], $data['origin'], $data['metadata']);
+    foreach ($data['attributes'] as $attribute_name => $values) {
+      if (!$attribute = $object->getAttribute($attribute_name)) {
+        $class = !empty($object->getMetadata()['attributes'][$attribute_name]) ? $object->getMetadata()['attributes'][$attribute_name]['class'] : FALSE;
+        if ($class && class_exists($class)) {
+          $object->addAttribute($attribute_name, $values['type'], NULL, 'und', $class);
+        }
+        else {
+          $object->addAttribute($attribute_name, $values['type'], NULL);
+        }
+        $attribute = $object->getAttribute($attribute_name);
+      }
+      $value_property = (new \ReflectionClass($attribute))->getProperty('value');
+      $value_property->setAccessible(TRUE);
+      $value_property->setValue($attribute, $values['value']);
+    }
+    return $object;
+  }
+
 }
